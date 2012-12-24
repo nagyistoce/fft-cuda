@@ -1,6 +1,7 @@
 #include "bitmap.h"
 
-/* Checking google group! prokletinja odbija saradnju za sad -.- */
+#define MAX(a, b)  (((a) > (b)) ? (a) : (b))
+#define MIN(a, b)  (((a) < (b)) ? (a) : (b))
 
 INFOHEADER readInfo( FILE* f ){ /* Reading infoheader from .bmp file */
 	INFOHEADER info;
@@ -112,16 +113,16 @@ void loadImage(FILE* f, float** mat){ /* Loading and creating matrix from .bmp *
         }
 }
 
-float** createMatrix(void){ /* Allocating matrix */
+float** createMatrix(int m_wid, int m_high){ /* Allocating matrix */
 	float** mat;
 	int i;
-	mat = (float**) malloc(sizeof( float* )*height);
+	mat = (float**) malloc(sizeof( float* )*m_high);
 	if(mat == NULL){
 		printf(" Failed alocating rows ");
 		exit(1);
 	}
-	for(i = 0; i < height; i++){
-		mat[i] = ( float* ) malloc(sizeof(float)*width);
+	for(i = 0; i < m_high; i++){
+		mat[i] = ( float* ) malloc(sizeof(float)*m_wid);
 		if(mat[i] == NULL){
 			printf(" Failed alocating columns %d ",i);
 			exit(1);
@@ -130,7 +131,7 @@ float** createMatrix(void){ /* Allocating matrix */
 	return mat;
 }
 
-void writeMatrix(float** mat){ /* Writing matrix on stdout */
+void printMatrix(float** mat){ /* Printing matrix on stdout */
 	int i,j;
 	
 	for(i = 0; i < height; i++){
@@ -146,10 +147,10 @@ void isBMP(HEADER head, INFOHEADER info,char* path){/* Checking is file bmp and 
                 printf("%s : The file is not BMP format! \n",path);
                 exit(0);
         }
-        if(info.bpp != 24){
+        /*if(info.bpp != 24){
 		printf("%s : The file is not 24 bit! \n",path);
 		exit(1);
-        }
+        }*/
 }
 
 void writeBMP( BITMAP pic, char* opath){ /* Creating new .bmp file */
@@ -185,7 +186,7 @@ void writeBMP( BITMAP pic, char* opath){ /* Creating new .bmp file */
 	fclose(out);
 }
 
-BITMAP createBMP(char* path){
+BITMAP createBMP(char* path){ /* Constructor for BMP structure */
 	BITMAP pic;
 	pic.f = fopen(path,"rb");
 	pic.info = readInfo(pic.f);
@@ -193,8 +194,75 @@ BITMAP createBMP(char* path){
 	pic.height = height;
 	pic.width = width;
 	isBMP(pic.head,pic.info,path);
-	pic.matrix = createMatrix();
+	pic.matrix = createMatrix(pic.width, pic.height);
 	loadImage(pic.f,pic.matrix);
 	return pic;
+}
+
+float** outputMatrix(BITMAP pic, FILTER fil){ /* Creating matrix with border for convolution */
+	int out_width = (pic.width + 2 * (fil.dim/2)), out_height = (pic.height+(fil.dim/2)*2);
+	float** output = createMatrix(out_width, out_height);
+	int i, j, k, ix = fil.dim/2, iy = 0;
+	
+	for(i = 0;i < pic.height; i++){
+		iy = fil.dim/2;
+		for(j = 0; j < pic.width; j++){
+			output[ix][iy] = pic.matrix[i][j];
+			iy += 1;
+			
+		}
+		ix += 1;
+	}
+	for(i = 0;i < fil.dim/2; i++){
+		for(j = 0;j < out_width; j++){
+			output[i][j] = 0;
+			output[out_height - i - 1][j] = 0;
+		}
+		for(k = 0;k < out_height; k++){
+			output[k][i] = 0;
+			output[k][out_width - i - 1] = 0;
+		}
+	}
+	return output;
+}
+
+void extractMatrix(BITMAP pic, FILTER fil, float** output){ /* Extracting bmp pixel matrix from output matrix */
+	
+	int i, j, ix = 0, iy = 0, grw = pic.width + fil.dim/2, grh = pic.height + fil.dim/2;
+	for(i = fil.dim/2;i < grh; i++){
+		for(j = fil.dim/2; j < grw; j++){
+			pic.matrix[ix][iy] = output[i][j];
+			iy += 1;
+		}
+		ix += 1;
+	}
+}
+
+float** convolution(int width, int height,BITMAP pic, FILTER fil, float** output){ /* width and height of  output matrix,Applying convolution on matrix  */
+	/* input: width and heigth of output matrix, BITMAP structure, filter, output matrix, factor, bias */
+	float** result = createMatrix(pic.width,pic.height);
+	
+	int i, j, k, l; 
+	int r,g,b;
+	int imx, imy, temp;
+	for(i = fil.dim / 2; i < pic.height + fil.dim/2; i++){
+		for(j = fil.dim / 2; j < pic.width + fil.dim / 2; j++){
+			r = 0;
+			g = 0;
+			b = 0;
+			for(k = 0; k < fil.dim; k++)
+				for(l = 0; l < fil.dim; l++){
+					imx = i - fil.dim/2 + k;
+					imy = j - fil.dim/2 + l;
+					temp = (int) output[imx][imy];
+					b += (temp & 0x000000FF)*fil.matrix[k][l];
+					g += ((temp >> 8) & 0x000000FF)*fil.matrix[k][l];
+					r += ((temp >> 16) & 0x000000FF)*fil.matrix[k][l];
+				}
+			result[i - fil.dim/2][j - fil.dim/2] = (float) ( ( MIN(MAX((int)(fil.factor * r + fil.bias), 0), 255) << 16 ) + ( MIN(MAX((int)(fil.factor * g + fil.bias), 0), 255) << 8 ) + ( MIN(MAX((int)(fil.factor * b + fil.bias), 0), 255) )); 		
+		}
+	}
+	
+	return result;
 }
 
