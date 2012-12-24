@@ -1,6 +1,6 @@
 #include "bitmap.h"
 
-/* Checking google group! */
+/* Checking google group! prokletinja odbija saradnju za sad -.- */
 
 INFOHEADER readInfo( FILE* f ){ /* Reading infoheader from .bmp file */
 	INFOHEADER info;
