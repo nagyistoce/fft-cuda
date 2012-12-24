@@ -40,17 +40,27 @@ typedef struct { /* BITMAP */
 	float** matrix;
 }BITMAP;
 
+typedef struct {
+	int dim;
+	float factor, bias;
+	float matrix[3][3];
+}FILTER;
+
 int width,height;
 
 INFOHEADER readInfo( FILE* f );
 HEADER readHeader(FILE *f );
 void writeInfoheader(INFOHEADER info);
 void writeHeader(HEADER head);
-void loadImage(FILE* f, float** mat);
-float** createMatrix(void);
-void writeMatrix(float** mat);
+void loadImage24bit(FILE* f, float** mat);
+float** createMatrix(int m_wid, int m_high);
+void printMatrix(float** mat);
 void isBMP(HEADER head, INFOHEADER info,char* path);
 void writeBMP( BITMAP pic, char* path);
 BITMAP createBMP(char* path);
+void extractMatrix(BITMAP pic, FILTER fil, float** output);
+float** outputMatrix(BITMAP pic, FILTER fil);
+float** convolution(int width, int height, BITMAP pic, FILTER fil, float** output);
+
 
 #endif
