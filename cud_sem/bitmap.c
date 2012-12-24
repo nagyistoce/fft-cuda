@@ -1,5 +1,7 @@
 #include "bitmap.h"
 
+/* Checking google group! */
+
 INFOHEADER readInfo( FILE* f ){ /* Reading infoheader from .bmp file */
 	INFOHEADER info;
 	
