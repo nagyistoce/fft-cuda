@@ -1,14 +1,13 @@
-
 ////////////////////////////////////////////////////////
-/*									  */
+/*	                                                  */
 /* Header file sa deklaracijama funkcija potrebnih za */
 /* obradu .bmp fajlova, kao i transformacije	        */
 /* dobijenih rezultata u zeljene za dalju obradu.     */
-/*									  */
+/*	                                                  */
 /* CUDA C Programiranje                               */
-/* Seminarski rad: 2D FFT					  */
+/* Seminarski rad: 2D FFT	                           */
 /* Ognjen Kocic 59/2010 Stefan Isidorovic 25/2010     */
-/* 									  */
+/*                                                    */
 ////////////////////////////////////////////////////////
 
 
